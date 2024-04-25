@@ -1,0 +1,26 @@
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: payments-db
+      POSTGRES_USER: payments-user
+      POSTGRES_PASSWORD: payments-password
+
+  app:
+    build: .
+    container_name: payments
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_ADDR: "postgres:5432"
+      DATABASE_NAME: "payments-db"
+      DATABASE_USER: "payments-user"
+      DATABASE_PASSWORD: "payments-password"
+      DATABASE_WITH_INSECURE: "true"
+      PAYMENTS_APP_ADDR: ":8080"
