@@ -12,6 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+type ExtensionDetail struct {
+	Method string
+	httprouter.Handle
+}
+
+var (
+	LivenessExtension          = "/liveness"
+	ReadinessExtension         = "/readiness"
+	CreateAccountExtension     = "/accounts"
+	GetAccountExtension        = "/accounts/:accountId"
+	CreateTransactionExtension = "/transactions"
+)
+
 type paymentsAppHandler struct {
 	panicCount         atomic.Int64
 	accountsService    models.AccountsService

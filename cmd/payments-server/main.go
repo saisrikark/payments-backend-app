@@ -50,7 +50,7 @@ func main() {
 	useInsecureDatabase := viper.GetBool(DATABASE_WITH_INSECURE_ENV)
 	paymentsAppAddr := viper.GetString(PAYMENTS_APP_ADDR_ENV)
 
-	logger.InfoContext(ctx, "SRIKARconfiguration",
+	logger.InfoContext(ctx, "configuration",
 		"databaseAddr", databaseAddr,
 		"databaseName", databaseName,
 		"databaseUser", databaseUser,

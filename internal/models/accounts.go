@@ -21,6 +21,6 @@ func (as *accountsService) Create(ctx context.Context, account models.Account) (
 	return models.Account{}, nil
 }
 
-func (ts *accountsService) GetForID(ctx context.Context, accountID int64) (models.Account, error) {
+func (as *accountsService) GetForID(ctx context.Context, accountID int64) (models.Account, error) {
 	return models.Account{}, nil
 }
