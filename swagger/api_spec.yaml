@@ -83,6 +83,7 @@ paths:
                 account_id:
                   type: integer
                   example: 1
+                  enum: [1, 2, 3, 4]
                 operation_type_id:
                   type: integer
                   example: 4
