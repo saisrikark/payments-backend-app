@@ -1,0 +1,13 @@
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    logging:
+      driver: none 
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: payments-db
+      POSTGRES_USER: payments-user
+      POSTGRES_PASSWORD: payments-password

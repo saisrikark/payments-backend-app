@@ -1,0 +1,102 @@
+openapi: 3.0.0
+info:
+  title: Account and Transaction API
+  version: 1.0.0
+  description: API for managing accounts and transactions
+
+paths:
+  /accounts:
+    post:
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document_number:
+                  type: string
+                  example: "12345678900"
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: integer
+                    example: 1
+                  document_number:
+                    type: string
+                    example: "12345678900"
+        '400':
+          description: Bad request
+        '409':
+          description: Account already exists
+        '500':
+          description: Internal Server Error
+
+  /accounts/{accountId}:
+    get:
+      summary: Retrieve account information
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Account information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: integer
+                    example: 1
+                  document_number:
+                    type: string
+                    example: "12345678900"
+        '400':
+          description: Bad request
+        '404':
+          description: Account not found
+        '500':
+          description: Internal Server Error
+
+  /transactions:
+    post:
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id:
+                  type: integer
+                  example: 1
+                  enum: [1, 2, 3, 4]
+                operation_type_id:
+                  type: integer
+                  example: 4
+                amount:
+                  type: number
+                  format: double
+                  example: 123.45
+      responses:
+        '201':
+          description: Transaction created successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Account not found
+        '500':
+          description: Internal Server Error
