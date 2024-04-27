@@ -117,6 +117,8 @@ func (pah *paymentsAppHandler) CreateAccount(w http.ResponseWriter, r *http.Requ
 		switch {
 		case errors.Is(err, models.DuplicateRecordErr):
 			w.WriteHeader(http.StatusConflict)
+			ba, _ := json.Marshal(map[string]string{"msg": err.Error()})
+			fmt.Fprintf(w, "%s", string(ba))
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -151,6 +153,8 @@ func (pah *paymentsAppHandler) GetAccount(w http.ResponseWriter, r *http.Request
 		switch {
 		case errors.Is(err, models.NoRecordErr):
 			w.WriteHeader(http.StatusNotFound)
+			ba, _ := json.Marshal(map[string]string{"msg": err.Error()})
+			fmt.Fprintf(w, "%s", string(ba))
 		default:
 			pah.logger.ErrorContext(ctx, "unable to fetch account for id", "accountID", accountId, "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -201,6 +205,8 @@ func (pah *paymentsAppHandler) CreateTransaction(w http.ResponseWriter, r *http.
 		switch {
 		case errors.Is(err, models.NoRecordErr):
 			w.WriteHeader(http.StatusNotFound)
+			ba, _ := json.Marshal(map[string]string{"msg": err.Error()})
+			fmt.Fprintf(w, "%s", string(ba))
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
