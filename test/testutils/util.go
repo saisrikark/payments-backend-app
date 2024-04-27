@@ -3,8 +3,8 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,15 +14,21 @@ import (
 
 	"payments-backend-app/builder"
 	"payments-backend-app/pkg/models"
-	"payments-backend-app/pkg/server"
 )
 
+var (
+	addr = ":8080"
+)
+
+func GetBaseUrl() string {
+	return "http://localhost" + addr
+}
+
 type TestApp struct {
-	port               int
-	accountsService    models.AccountsService
-	transactionService models.TransactionService
+	baseUrl            string
+	AccountsService    models.AccountsService
+	TransactionService models.TransactionService
 	runner             builder.Runner
-	runningLock        *sync.Mutex
 }
 
 type TestDatabase struct {
@@ -31,21 +37,15 @@ type TestDatabase struct {
 
 type Option func(*TestApp)
 
-func WithPort(port int) Option {
-	return func(ta *TestApp) {
-		ta.port = port
-	}
-}
-
 func WithAccountsService(accountsService models.AccountsService) Option {
 	return func(ta *TestApp) {
-		ta.accountsService = accountsService
+		ta.AccountsService = accountsService
 	}
 }
 
 func WithTransactionService(transactionService models.TransactionService) Option {
 	return func(ta *TestApp) {
-		ta.transactionService = transactionService
+		ta.TransactionService = transactionService
 	}
 }
 
@@ -56,22 +56,29 @@ func NewTestServer(t *testing.T, opts ...Option) *TestApp {
 		opt(testApp)
 	}
 
-	testApp.runningLock = &sync.Mutex{}
+	envConfig := builder.GetEnvConfig()
 
 	paymentsAppBuilder := builder.
 		NewPaymentsAppBuilder().
-		WithPaymentsServerAddr(fmt.Sprintf(":%d", testApp.port)).
-		WithAccountsService(testApp.accountsService).
-		WithTransactionService(testApp.transactionService).
-		WithDatabaseAddr("localhost:5432").
-		WithDatabaseName("payments-db").
-		WithDatabaseUser("payments-user").
-		WithDatabasePassword("payments-password").
-		UseInsecureDatabaseConnection()
+		WithPaymentsServerAddr(envConfig.PaymentsAppAddr).
+		WithAccountsService(testApp.AccountsService).
+		WithTransactionService(testApp.TransactionService).
+		WithDatabaseAddr(envConfig.DatabaseAddr).
+		WithDatabaseName(envConfig.DatabaseName).
+		WithDatabaseUser(envConfig.DatabaseUser).
+		WithDatabasePassword(envConfig.DatabasePassword)
+
+	if envConfig.UseInsecureDatabase {
+		paymentsAppBuilder = paymentsAppBuilder.UseInsecureDatabaseConnection()
+	}
 
 	paymentsAppRunner, err := paymentsAppBuilder.Build()
 	require.NoError(t, err)
 
+	testApp.AccountsService = paymentsAppBuilder.AccountsService
+	testApp.TransactionService = paymentsAppBuilder.TransactionService
+
+	testApp.baseUrl = "http://localhost" + envConfig.PaymentsAppAddr
 	testApp.runner = paymentsAppRunner
 
 	return testApp
@@ -79,19 +86,18 @@ func NewTestServer(t *testing.T, opts ...Option) *TestApp {
 
 func (ta *TestApp) Start(ctx context.Context) error {
 	go func() {
-		ta.runner.Start(ctx)
+		if err := ta.runner.Start(ctx); err != nil {
+			panic(err)
+		}
 	}()
 	return nil
 }
 
-func TryLivenessRequest(port int) int {
-	url := fmt.Sprintf("http://localhost:%d%s", port, server.LivenessExtension)
-
-	resp, err := http.Get(url)
+func (ta *TestApp) TryLivenessRequest() int {
+	resp, err := http.Get(ta.baseUrl + "/liveness")
 	if err != nil {
 		return 0
 	}
-
 	return resp.StatusCode
 }
 
@@ -100,7 +106,7 @@ func (ta *TestApp) WaitForRunnning(t *testing.T) bool {
 	isRunning := false
 
 	for i := 0; i < 5; i++ {
-		if status := TryLivenessRequest(ta.port); status == 200 {
+		if status := ta.TryLivenessRequest(); status == 200 {
 			isRunning = true
 			break
 		}
@@ -108,7 +114,7 @@ func (ta *TestApp) WaitForRunnning(t *testing.T) bool {
 	}
 
 	if !isRunning {
-		t.FailNow()
+		t.Errorf("server not up and running")
 	}
 
 	return isRunning
@@ -116,4 +122,26 @@ func (ta *TestApp) WaitForRunnning(t *testing.T) bool {
 
 func (ta *TestApp) Stop(ctx context.Context) error {
 	return ta.runner.Stop(ctx)
+}
+
+func GenerateRandomNumber(length int) string {
+	return fmt.Sprintf("%d", GenerateRandomNumberInt(length))
+}
+
+func GenerateRandomNumberInt(length int) int {
+	min := pow(10, length-1)
+	max := pow(10, length) - 1
+	return rand.Intn(max-min+1) + min
+}
+
+func pow(base, exp int) int {
+	result := 1
+	for exp > 0 {
+		if exp%2 == 1 {
+			result *= base
+		}
+		base *= base
+		exp /= 2
+	}
+	return result
 }

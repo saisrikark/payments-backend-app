@@ -3,15 +3,14 @@ module payments-backend-app
 go 1.21.1
 
 require (
-	github.com/docker/go-connections v0.5.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.30.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.30.0
 	github.com/uptrace/bun v1.2.1
 	github.com/uptrace/bun/dialect/pgdialect v1.2.1
 	github.com/uptrace/bun/driver/pgdriver v1.2.1
+	github.com/uptrace/bun/extra/bundebug v1.2.1
 )
 
 require (
@@ -26,7 +25,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/docker v25.0.5+incompatible // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -40,6 +41,8 @@ require (
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect

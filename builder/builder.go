@@ -2,11 +2,9 @@ package builder
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"payments-backend-app/internal/migrate"
 	imodels "payments-backend-app/internal/models"
 	"payments-backend-app/pkg/models"
 
@@ -14,13 +12,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
 )
-
-type Builder interface {
-	Build() (Runner, error)
-}
 
 type Runner interface {
 	Start(ctx context.Context) error
@@ -30,6 +22,8 @@ type Runner interface {
 type Option func(*PaymentsAppBuilder)
 
 type PaymentsAppBuilder struct {
+	isBuilt bool
+
 	// database config
 	db                            *bun.DB
 	disableDatabase               bool
@@ -40,8 +34,8 @@ type PaymentsAppBuilder struct {
 	useInsecureDatabaseConnection bool
 
 	// services
-	as models.AccountsService
-	ts models.TransactionService
+	AccountsService    models.AccountsService
+	TransactionService models.TransactionService
 
 	// payments server config
 	paymentsServerAddr string
@@ -97,18 +91,32 @@ func (pab *PaymentsAppBuilder) WithLogger(logger *slog.Logger) *PaymentsAppBuild
 }
 
 func (pab *PaymentsAppBuilder) WithAccountsService(as models.AccountsService) *PaymentsAppBuilder {
-	pab.as = as
+	pab.AccountsService = as
 	return pab
 }
 
 func (pab *PaymentsAppBuilder) WithTransactionService(as models.TransactionService) *PaymentsAppBuilder {
-	pab.ts = as
+	pab.TransactionService = as
 	return pab
 }
 
 func (pab *PaymentsAppBuilder) DisableDatabase() *PaymentsAppBuilder {
 	pab.disableDatabase = true
 	return pab
+}
+
+func (pab *PaymentsAppBuilder) GetAccountsService() (models.AccountsService, error) {
+	if !pab.isBuilt {
+		return nil, fmt.Errorf("not built")
+	}
+	return pab.AccountsService, nil
+}
+
+func (pab *PaymentsAppBuilder) GetTransactionService() (models.TransactionService, error) {
+	if !pab.isBuilt {
+		return nil, fmt.Errorf("not built")
+	}
+	return pab.TransactionService, nil
 }
 
 func (pab *PaymentsAppBuilder) Build() (Runner, error) {
@@ -120,36 +128,27 @@ func (pab *PaymentsAppBuilder) Build() (Runner, error) {
 	}
 
 	if !pab.disableDatabase {
-		sqldb := sql.OpenDB(
-			pgdriver.NewConnector(
-				pgdriver.WithAddr(pab.databaseAddr),
-				pgdriver.WithDatabase(pab.databaseName),
-				pgdriver.WithUser(pab.databaseUser),
-				pgdriver.WithPassword(pab.databasePassword),
-				pgdriver.WithInsecure(pab.useInsecureDatabaseConnection)))
-
-		if par.db == nil {
-			par.db = bun.NewDB(sqldb, pgdialect.New())
-		}
-
-		if err := par.db.Ping(); err != nil {
-			return nil, fmt.Errorf("unable to connect to database %s", err.Error())
-		}
-
-		if err := migrate.Run(context.Background(), par.db); err != nil {
-			return nil, fmt.Errorf("unable to migrate [%s]", err.Error())
+		var err error
+		par.db, err = NewDatabase(
+			pab.databaseAddr,
+			pab.databaseName,
+			pab.databaseUser,
+			pab.databasePassword,
+			pab.useInsecureDatabaseConnection)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	if pab.as == nil {
-		pab.as = imodels.NewAccountsService(par.db)
+	if pab.AccountsService == nil {
+		pab.AccountsService = imodels.NewAccountsService(par.db)
 	}
 
-	if pab.ts == nil {
-		pab.ts = imodels.NewTransactionService(par.db)
+	if pab.TransactionService == nil {
+		pab.TransactionService = imodels.NewTransactionService(par.db)
 	}
 
-	pah := server.NewPaymentsAppHandler(pab.as, pab.ts, server.WithLogger(pab.logger))
+	pah := server.NewPaymentsAppHandler(pab.AccountsService, pab.TransactionService, server.WithLogger(pab.logger))
 
 	router := httprouter.New()
 	router.PanicHandler = pah.PanicHandler
@@ -166,6 +165,7 @@ func (pab *PaymentsAppBuilder) Build() (Runner, error) {
 	}
 
 	par.server = server
+	pab.isBuilt = true
 
 	return par, nil
 }

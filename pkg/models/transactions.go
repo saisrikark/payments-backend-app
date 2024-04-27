@@ -3,5 +3,5 @@ package models
 import "context"
 
 type TransactionService interface {
-	Create(ctx context.Context, transaction Transaction) (Transaction, error)
+	Create(ctx context.Context, transaction Transaction) (TransactionStatus, error)
 }

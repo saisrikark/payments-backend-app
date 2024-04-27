@@ -1,20 +1,10 @@
 #!/bin/bash
 
-timeout=60
-interval=1
-count=0
+export DATABASE_ADDR="localhost:5432"
+export DATABASE_NAME="payments-db"
+export DATABASE_USER="payments-user"
+export DATABASE_PASSWORD="payments-password"
+export DATABASE_WITH_INSECURE="true"
+export PAYMENTS_APP_ADDR=":8080"
 
-docker compose -f docker-compose-test.yml up &
-
-while ! nc -z localhost 5432 >/dev/null 2>&1; do
-    sleep "$interval"
-    count=$((count + interval))
-    if [ $count -ge $timeout ]; then
-        echo "Timeout: PostgreSQL not available after $timeout seconds."
-        exit 1
-    fi
-done
-
-echo "PostgreSQL is available."
-
-go test ./... -v
+go test -count=1 ./... -v

@@ -8,6 +8,7 @@ BINPATH=bin
 all: test build
 
 build:
+	$(GOCMD) mod tidy
 	$(GOBUILD) -o $(BINPATH)/payments-server cmd/payments-server/main.go
 
 test:
