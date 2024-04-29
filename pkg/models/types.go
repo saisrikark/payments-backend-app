@@ -56,4 +56,6 @@ type Transaction struct {
 }
 
 type TransactionStatus struct {
+	TransactionID int64
+	AccountID     int64
 }

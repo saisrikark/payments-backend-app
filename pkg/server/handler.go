@@ -196,7 +196,7 @@ func (pah *paymentsAppHandler) CreateTransaction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	_, err = pah.transactionService.Create(ctx, models.Transaction{
+	transactionStatus, err := pah.transactionService.Create(ctx, models.Transaction{
 		AccountID:       req.AccountID,
 		OperationTypeID: req.OperationTypeID,
 		Amount:          req.Amount,
@@ -213,7 +213,10 @@ func (pah *paymentsAppHandler) CreateTransaction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	resp := CreateTransactionResponse{}
+	resp := CreateTransactionResponse{
+		TransactionID: transactionStatus.TransactionID,
+		AccountID:     transactionStatus.AccountID,
+	}
 
 	ba, err = json.Marshal(resp)
 	if err != nil {

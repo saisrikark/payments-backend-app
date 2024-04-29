@@ -42,7 +42,7 @@ func TestCreateTransaction(t *testing.T) {
 					Amount:          123.11,
 				}
 
-				status, _, err := testServer.CallCreateTransaction(req)
+				status, resp, err := testServer.CallCreateTransaction(req)
 				if err != nil {
 					t.Errorf("error creating the transaction [%s]", err)
 				}
@@ -50,6 +50,35 @@ func TestCreateTransaction(t *testing.T) {
 				if status != http.StatusCreated {
 					t.Errorf("expected status %d got %d", http.StatusCreated, status)
 				}
+
+				if resp != nil {
+					if resp.TransactionID == 0 {
+						t.Errorf("0 transaction id")
+					} else {
+						transaction, err := testServer.TransactionService.GetForID(ctx, resp.TransactionID)
+						if err != nil {
+							t.Errorf("unable to fetch created transaction")
+						}
+
+						if resp.TransactionID != transaction.ID {
+							t.Errorf("transaction ids not matching resp %d database %d", resp.TransactionID, transaction.ID)
+						}
+
+						switch transaction.OperationTypeID {
+						case 1, 2, 3:
+							if (-req.Amount) != (transaction.Amount) {
+								t.Errorf("expected -%f got %f ", req.Amount, transaction.Amount)
+							}
+						case 4:
+							if (req.Amount) != (transaction.Amount) {
+								t.Errorf("expected %f got %f ", req.Amount, transaction.Amount)
+							}
+						}
+					}
+				} else {
+					t.Errorf("empty response body")
+				}
+
 			})
 
 		}

@@ -81,10 +81,17 @@ func (c *CreateTransactionRequest) UnmarshalJSON(data []byte) error {
 
 	c.AccountID = createTransactionRequest.AccountID
 	c.OperationTypeID = createTransactionRequest.OperationTypeID
-	c.Amount = createTransactionRequest.Amount
+
+	if models.IsCredit(int(c.OperationTypeID)) {
+		c.Amount = createTransactionRequest.Amount
+	} else {
+		c.Amount = -createTransactionRequest.Amount
+	}
 
 	return nil
 }
 
 type CreateTransactionResponse struct {
+	TransactionID int64 `json:"transaction_id"`
+	AccountID     int64 `json:"account_id"`
 }
