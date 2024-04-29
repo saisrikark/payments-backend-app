@@ -92,4 +92,6 @@ func (c *CreateTransactionRequest) UnmarshalJSON(data []byte) error {
 }
 
 type CreateTransactionResponse struct {
+	TransactionID int64 `json:"transaction_id"`
+	AccountID     int64 `json:"account_id"`
 }
