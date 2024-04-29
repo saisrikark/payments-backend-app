@@ -81,7 +81,12 @@ func (c *CreateTransactionRequest) UnmarshalJSON(data []byte) error {
 
 	c.AccountID = createTransactionRequest.AccountID
 	c.OperationTypeID = createTransactionRequest.OperationTypeID
-	c.Amount = createTransactionRequest.Amount
+
+	if models.IsCredit(int(c.OperationTypeID)) {
+		c.Amount = createTransactionRequest.Amount
+	} else {
+		c.Amount = -createTransactionRequest.Amount
+	}
 
 	return nil
 }
