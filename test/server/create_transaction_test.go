@@ -152,4 +152,121 @@ func TestCreateTransaction(t *testing.T) {
 		}
 
 	})
+
+	// tests to handle remaining balance
+
+	t.Run("Remaining balance", func(t *testing.T) {
+
+		type TestData struct {
+			OperationTypeID  int
+			Amount           float64
+			ExpectedBalances float64
+		}
+
+		testDatas := make([]TestData, 0)
+
+		// testDatas = append(testDatas, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           50,
+		// 	ExpectedBalances: -50.0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           23.5,
+		// 	ExpectedBalances: -23.5,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           18.7,
+		// 	ExpectedBalances: -18.7,
+		// })
+
+		// testDatas = append(testDatas, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           50,
+		// 	ExpectedBalances: 0.0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           23.5,
+		// 	ExpectedBalances: -13.5,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           18.7,
+		// 	ExpectedBalances: -18.7,
+		// }, TestData{
+		// 	OperationTypeID:  4,
+		// 	Amount:           60,
+		// 	ExpectedBalances: 0.0,
+		// })
+
+		// testDatas = append(testDatas, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           50,
+		// 	ExpectedBalances: 0.0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           23.5,
+		// 	ExpectedBalances: 0.0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           18.7,
+		// 	ExpectedBalances: 0.0,
+		// }, TestData{
+		// 	OperationTypeID:  4,
+		// 	Amount:           60,
+		// 	ExpectedBalances: 0.0,
+		// }, TestData{
+		// 	OperationTypeID:  4,
+		// 	Amount:           100,
+		// 	ExpectedBalances: 67.8,
+		// })
+
+		account, err := testServer.AccountsService.Create(ctx, models.Account{
+			DocumentNumber: testutils.GenerateRandomNumber(10),
+		})
+		if err != nil {
+			t.Errorf("unable to create account [%s]", err)
+		}
+
+		respIDs := make([]int64, 0)
+
+		for _, testData := range testDatas {
+
+			req := &server.CreateTransactionRequest{
+				AccountID:       account.AccountID,
+				OperationTypeID: int64(testData.OperationTypeID),
+				Amount:          testData.Amount,
+			}
+
+			status, resp, err := testServer.CallCreateTransaction(req)
+			if err != nil {
+				t.Errorf("error creating the transaction [%s]", err)
+			}
+
+			if resp != nil {
+				respIDs = append(respIDs, resp.TransactionID)
+			} else {
+				t.Errorf("empty response body")
+			}
+
+			if status != http.StatusCreated {
+				t.Errorf("expected status %d got %d", http.StatusCreated, status)
+			}
+
+		}
+
+		for i, id := range respIDs {
+			transaction, err := testServer.TransactionService.GetForID(ctx, id)
+			if err != nil {
+				t.Errorf("unable to fetch created transaction")
+			}
+
+			if transaction.Balance != testDatas[i].ExpectedBalances {
+				t.Errorf("operation type %d amount %f expected balance %f got %f",
+					testDatas[i].OperationTypeID,
+					testDatas[i].Amount,
+					testDatas[i].ExpectedBalances,
+					transaction.Balance)
+			}
+		}
+
+	})
 }
