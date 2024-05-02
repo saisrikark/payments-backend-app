@@ -166,6 +166,38 @@ func TestCreateTransaction(t *testing.T) {
 		testDatas := make([]TestData, 0)
 
 		// testDatas = append(testDatas, TestData{
+		// 	OperationTypeID:  4,
+		// 	Amount:           50,
+		// 	ExpectedBalances: 10,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           30,
+		// 	ExpectedBalances: 0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           10,
+		// 	ExpectedBalances: 0,
+		// })
+
+		// testDatas = append(testDatas, TestData{
+		// 	OperationTypeID:  4,
+		// 	Amount:           50,
+		// 	ExpectedBalances: 0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           30,
+		// 	ExpectedBalances: 0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           10,
+		// 	ExpectedBalances: 0,
+		// }, TestData{
+		// 	OperationTypeID:  1,
+		// 	Amount:           20,
+		// 	ExpectedBalances: -10,
+		// })
+
+		// testDatas = append(testDatas, TestData{
 		// 	OperationTypeID:  1,
 		// 	Amount:           50,
 		// 	ExpectedBalances: -50.0,
@@ -197,27 +229,27 @@ func TestCreateTransaction(t *testing.T) {
 		// 	ExpectedBalances: 0.0,
 		// })
 
-		// testDatas = append(testDatas, TestData{
-		// 	OperationTypeID:  1,
-		// 	Amount:           50,
-		// 	ExpectedBalances: 0.0,
-		// }, TestData{
-		// 	OperationTypeID:  1,
-		// 	Amount:           23.5,
-		// 	ExpectedBalances: 0.0,
-		// }, TestData{
-		// 	OperationTypeID:  1,
-		// 	Amount:           18.7,
-		// 	ExpectedBalances: 0.0,
-		// }, TestData{
-		// 	OperationTypeID:  4,
-		// 	Amount:           60,
-		// 	ExpectedBalances: 0.0,
-		// }, TestData{
-		// 	OperationTypeID:  4,
-		// 	Amount:           100,
-		// 	ExpectedBalances: 67.8,
-		// })
+		testDatas = append(testDatas, TestData{
+			OperationTypeID:  1,
+			Amount:           50,
+			ExpectedBalances: 0.0,
+		}, TestData{
+			OperationTypeID:  1,
+			Amount:           23.5,
+			ExpectedBalances: 0.0,
+		}, TestData{
+			OperationTypeID:  1,
+			Amount:           18.7,
+			ExpectedBalances: 0.0,
+		}, TestData{
+			OperationTypeID:  4,
+			Amount:           60,
+			ExpectedBalances: 0.0,
+		}, TestData{
+			OperationTypeID:  4,
+			Amount:           100,
+			ExpectedBalances: 67.8,
+		})
 
 		account, err := testServer.AccountsService.Create(ctx, models.Account{
 			DocumentNumber: testutils.GenerateRandomNumber(10),

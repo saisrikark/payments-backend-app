@@ -10,6 +10,10 @@ import (
 	"github.com/uptrace/bun"
 )
 
+var (
+	limit = 2
+)
+
 type transactionService struct {
 	db *bun.DB
 }
@@ -37,10 +41,8 @@ func (ts *transactionService) Create(ctx context.Context, transaction models.Tra
 
 		if transaction.Amount > 0 {
 
-			// query fetches all transactions with balance < 0
 			count, err := tx.NewSelect().
 				Model(&unresolvedTransactions).
-				Where("balance < 0").
 				Where("account_id = ?", transaction.AccountID).
 				OrderExpr("event_date ASC").ScanAndCount(ctx)
 			if err != nil {
@@ -66,6 +68,52 @@ func (ts *transactionService) Create(ctx context.Context, transaction models.Tra
 
 					} else {
 						break
+					}
+
+					// push to db
+					_, err := tx.NewUpdate().Model(&unresolvedTransaction).
+						Set("balance = ?", transactionRemainingBalance).
+						Where("id = ?", unresolvedTransaction.ID).
+						Exec(ctx)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+		} else {
+			// check if any of the previous transactions are positive
+			// if positive then subtract from it and update in the db
+
+			count, err := tx.NewSelect().
+				Model(&unresolvedTransactions).
+				Where("account_id = ?", transaction.AccountID).
+				Where("balance > 0").
+				OrderExpr("event_date ASC").
+				ScanAndCount(ctx)
+			if err != nil {
+				if !errors.Is(err, sql.ErrNoRows) {
+					return err
+				}
+			}
+
+			if count > 0 {
+				// for each transaction, see if we complete the balance and update in db
+				for _, unresolvedTransaction := range unresolvedTransactions {
+					transactionRemainingBalance := 0.0
+
+					if currBalance == 0 {
+						break
+					}
+
+					if unresolvedTransaction.Balance+currBalance > 0 {
+						// there is balance remaning in this transaction and the current transaction is resolved
+						transactionRemainingBalance = unresolvedTransaction.Balance + currBalance
+						currBalance = 0
+					} else {
+						// no balance in the transaction
+						currBalance = currBalance + unresolvedTransaction.Balance
+						transactionRemainingBalance = 0
 					}
 
 					// push to db
