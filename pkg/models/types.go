@@ -53,6 +53,7 @@ type Transaction struct {
 	OperationTypeID int64     `json:"operation_type_id" bun:"operation_type_id"`
 	Amount          float64   `json:"amount" bun:"amount"`
 	EventDate       time.Time `json:"event_date" bun:"event_date"`
+	Balance         float64   `json:"balance" bun:"balance"`
 }
 
 type TransactionStatus struct {

@@ -25,14 +25,65 @@ func (ts *transactionService) Create(ctx context.Context, transaction models.Tra
 	transactionStatus := models.TransactionStatus{}
 	rtransaction := models.Transaction{}
 
+	unresolvedTransactions := []models.Transaction{}
+
 	err := ts.db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
 
-		if err := tx.NewSelect().Model(&models.Account{}).Where("id = ?", transaction.AccountID).Scan(ctx); err != nil {
+		if err := tx.NewSelect().Model(&models.Account{}).Where("id = ?", transaction.AccountID).For("UPDATE").Scan(ctx); err != nil {
 			return err
+		}
+
+		currBalance := transaction.Amount
+
+		if transaction.Amount > 0 {
+
+			// query fetches all transactions with balance < 0
+			count, err := tx.NewSelect().
+				Model(&unresolvedTransactions).
+				Where("balance < 0").
+				Where("account_id = ?", transaction.AccountID).
+				OrderExpr("event_date ASC").ScanAndCount(ctx)
+			if err != nil {
+				if !errors.Is(err, sql.ErrNoRows) {
+					return err
+				}
+			}
+
+			if count > 0 {
+				// for each transaction, see if we complete the balance and update in db
+				for _, unresolvedTransaction := range unresolvedTransactions {
+					transactionRemainingBalance := 0.0
+
+					if currBalance > 0 {
+						// transaction is resolved set to 0
+						if unresolvedTransaction.Balance+currBalance > 0 {
+							transactionRemainingBalance = 0.0
+							currBalance = currBalance + unresolvedTransaction.Balance
+						} else {
+							transactionRemainingBalance = unresolvedTransaction.Balance + currBalance
+							currBalance = 0
+						}
+
+					} else {
+						break
+					}
+
+					// push to db
+					_, err := tx.NewUpdate().Model(&unresolvedTransaction).
+						Set("balance = ?", transactionRemainingBalance).
+						Where("id = ?", unresolvedTransaction.ID).
+						Exec(ctx)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 		}
 
 		transaction.EventDate = time.Now()
 
+		transaction.Balance = currBalance
 		_, err := tx.NewInsert().Model(&transaction).Exec(ctx)
 		if err != nil {
 			return err
